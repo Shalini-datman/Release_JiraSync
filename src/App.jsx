@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 
 // Inject Inter font
 if(typeof document!=="undefined"&&!document.getElementById("datman-fonts")){
@@ -2418,28 +2418,28 @@ function saveJiraCfg(cfg) {
 }
 
 function JiraVersionsPage({ releases, onSyncBack }) {
-  const { useState: uS, useEffect: uE, useMemo: uM, useCallback: uC } = React;
+//  const { useState: uS, useEffect: uE, useMemo: uM, useCallback: uC } = React;
 
   // ── Config ──────────────────────────────────────────────────────────────────
-  const [cfg, setCfg] = uS(() => loadJiraCfg());
-  const [showCfg, setShowCfg] = uS(false);
-  const [draftCfg, setDraftCfg] = uS(cfg);
+  const [cfg, setCfg] = useState(() => loadJiraCfg());
+  const [showCfg, setShowCfg] = useState(false);
+  const [draftCfg, setDraftCfg] = useState(cfg);
   const configured = !!(cfg.base && cfg.key);
 
   const saveCfg = () => { saveJiraCfg(draftCfg); setCfg(draftCfg); setShowCfg(false); };
 
   // ── Filters ─────────────────────────────────────────────────────────────────
-  const [search, setSearch] = uS("");
-  const [modFilter, setModFilter] = uS("All");
-  const [typeFilter, setTypeFilter] = uS("All");
-  const [showPending, setShowPending] = uS(false); // toggle: all-released vs. no-jira-only
+  const [search, setSearch] = useState("");
+  const [modFilter, setModFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [showPending, setShowPending] = useState(false); // toggle: all-released vs. no-jira-only
 
   // ── Sync state: { [releaseId]: { status:"idle"|"loading"|"ok"|"err", msg, versionId, link } }
-  const [syncState, setSyncState] = uS({});
+  const [syncState, setSyncState] = useState({});
   const setSync = (id, patch) => setSyncState(s => ({ ...s, [id]: { ...s[id], ...patch } }));
 
   // ── Filtered releases ────────────────────────────────────────────────────────
-  const rows = uM(() => {
+  const rows = useMemo(() => {
     return releases
       .filter(r => r.status === "Released")
       .filter(r => !search || r.summary.toLowerCase().includes(search.toLowerCase()) || (r.rn||"").toLowerCase().includes(search.toLowerCase()))
@@ -2458,7 +2458,7 @@ function JiraVersionsPage({ releases, onSyncBack }) {
   }, [releases, search, modFilter, typeFilter, showPending]);
 
   // ── Stats ────────────────────────────────────────────────────────────────────
-  const stats = uM(() => {
+  const stats = useMemo(() => {
     const rel = releases.filter(r => r.status === "Released");
     const withJira = rel.filter(r => r.jiraLink && r.jiraLink.trim() && r.jiraLink !== "Not needed").length;
     return { total: rel.length, withJira, without: rel.length - withJira };
@@ -2482,7 +2482,7 @@ function JiraVersionsPage({ releases, onSyncBack }) {
     return res;
   };
 
-  const syncToJira = uC(async (r) => {
+  const syncToJira = useCallback(async (r) => {
     setSync(r.id, { status: "loading", msg: "Connecting to Jira…" });
     try {
       // Step 1 — Fetch project to get numeric ID
